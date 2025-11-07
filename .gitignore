@@ -1,0 +1,38 @@
+# PyCharm 特定文件
+.idea/                  # PyCharm 项目配置目录（包含缓存、插件配置等）
+*.iml                   # 模块配置文件
+*.ipr                   # 项目配置文件
+*.iws                   # 工作区配置文件
+
+# Python 虚拟环境（避免提交本地环境依赖）
+venv/                   # 虚拟环境目录（默认名称）
+env/                    # 常见虚拟环境名称
+ENV/                    # 大写版本
+*.venv                  # 其他虚拟环境命名
+
+# 依赖安装目录（如用 pip 安装到项目内）
+__pycache__/            # Python 编译生成的缓存文件
+*.py[cod]               # 编译后的字节码文件
+*$py.class              # 旧版 Python 字节码
+
+# 测试/临时文件
+tests/__pycache__/      # 测试目录的缓存
+.pytest_cache/          # pytest 缓存
+.coverage               # 覆盖率报告
+htmlcov/                # 覆盖率 HTML 报告
+
+# 日志和输出文件
+logs/                   # 日志目录
+*.log                   # 日志文件
+dist/                   # 打包输出目录（如用 setuptools 或 poetry）
+build/                  # 构建目录
+*.egg-info/             # 打包相关信息
+
+# 环境变量和敏感信息
+.env                    # 环境变量文件（可能包含密钥、密码等）
+.env.local
+.env.*                  # 所有 .env 开头的文件
+
+# 操作系统特定文件
+.DS_Store               # macOS 系统文件
+Thumbs.db               # Windows 缩略图缓存
