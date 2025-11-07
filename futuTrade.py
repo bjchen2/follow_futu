@@ -101,6 +101,9 @@ class FutuOrder:
         if qty <= 0:
             append_log(f"[下单] 可下单股数无效 trd_obj={trd_obj}")
             return
+        if self.trd_env == TrdEnv.REAL:
+            #先解锁，再下单
+            self.trd_ctx.unlock_trade(init_param.pwd_unlock)
         ret,data=self.trd_ctx.place_order(acc_id=acc_id, order_type=OrderType.MARKET,price=last_price, qty=qty, code=stock_code, trd_side=trd_side, trd_env=trde_env)
         append_log(f"[下单] 下单成功 trd_obj={trd_obj}, ret={ret}, \ndata={data}")
         winsound.Beep(440, 500)
