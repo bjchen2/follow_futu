@@ -8,6 +8,7 @@ import futuTrade
 
 #总资产
 total_money = 10000
+can_use_money = total_money
 def compare_buy(position_dict, current_dict, futu_order):
     # 找出删除的记录
     for stock_code, record in position_dict.items():
@@ -22,12 +23,13 @@ def compare_buy(position_dict, current_dict, futu_order):
             position_total = record['market_val']
             diff = current_total - position_total
             if abs(diff) > 300:
+                diff = diff if diff < 0 else min(diff, can_use_money)
                 futu_order.place_order(stock_code=stock_code, invest_amount=diff, last_price=current_record.current_price)
 
     # 找出新增的记录
     for stock_code, record in current_dict.items():
         if stock_code not in position_dict:
-            futu_order.place_order(stock_code=stock_code, invest_amount=record.total_ratio * total_money / 100, last_price=record.current_price)
+            futu_order.place_order(stock_code=stock_code, invest_amount=min(record.total_ratio * total_money / 100, can_use_money), last_price=record.current_price)
 
 
 def trade(market = TrdMarket.US, env = TrdEnv.SIMULATE):
@@ -45,14 +47,16 @@ def trade(market = TrdMarket.US, env = TrdEnv.SIMULATE):
                 time.sleep(60)
                 continue
             ret, data = futu_order.position_list_query()
+            rebuild_special_pos_data(data)
             position_dict = {row['code']: row.to_dict() for _, row in data.iterrows() if row['qty'] != 0}
 
             print(f"\n[{time.strftime('%Y-%m-%d %H:%M:%S')}] 正在检查...")
 
             if position_dict:
-                global total_money
-                total_money = max(sum(obj['market_val'] for obj in position_dict.values()), 10000)
-
+                global total_money, can_use_money
+                pos_money = sum(obj['market_val'] for obj in position_dict.values())
+                total_money = max(pos_money, total_money)
+                can_use_money = total_money - pos_money
             current_pos = monitor.fetch_data()
             for obj in current_pos.values():
                 obj.stock_code = prefix_code + obj.stock_code
@@ -98,6 +102,12 @@ def trade(market = TrdMarket.US, env = TrdEnv.SIMULATE):
             traceback.print_exc()
             winsound.Beep(440, 500)
             time.sleep(60)  # 出错后等待1分钟再重试
+
+
+def rebuild_special_pos_data(data):
+    mask = data['stock_name'] == '伯克希尔-B'
+    data.loc[mask, 'code'] = 'US.BRK.B'
+
 
 if __name__ == "__main__":
     trade()
