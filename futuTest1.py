@@ -12,7 +12,7 @@ def compare_buy(position_dict, current_dict, futu_order):
     # 找出删除的记录
     for stock_code, record in position_dict.items():
         if stock_code not in current_dict:
-            futu_order.place_order(stock_code=stock_code, trde_env=TrdEnv.SIMULATE, qty=-record['qty'])
+            futu_order.place_order(stock_code=stock_code, qty=-record['qty'])
 
     # 找出更新的记录
     for stock_code, current_record in current_dict.items():
@@ -22,12 +22,12 @@ def compare_buy(position_dict, current_dict, futu_order):
             position_total = record['market_val']
             diff = current_total - position_total
             if abs(diff) > 300:
-                futu_order.place_order(stock_code, diff, current_record.current_price, TrdEnv.SIMULATE)
+                futu_order.place_order(stock_code=stock_code, invest_amount=diff, last_price=current_record.current_price)
 
     # 找出新增的记录
     for stock_code, record in current_dict.items():
         if stock_code not in position_dict:
-            futu_order.place_order(stock_code, record.total_ratio * total_money / 100, record.current_price, TrdEnv.SIMULATE)
+            futu_order.place_order(stock_code=stock_code, invest_amount=record.total_ratio * total_money / 100, last_price=record.current_price)
 
 
 def trade(market = TrdMarket.US, env = TrdEnv.SIMULATE):
@@ -42,8 +42,7 @@ def trade(market = TrdMarket.US, env = TrdEnv.SIMULATE):
         try:
             wait_time = lycMonitor.get_monitor_sleep_sec(market=market)
             if wait_time is None:
-                futuTrade.append_log(f"监控结束，market={market}")
-                time.sleep(60 * 30)
+                time.sleep(60)
                 continue
             ret, data = futu_order.position_list_query()
             position_dict = {row['code']: row.to_dict() for _, row in data.iterrows() if row['qty'] != 0}

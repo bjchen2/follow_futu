@@ -61,7 +61,7 @@ class FutuOrder:
 
     #查询当前账户持仓
     def position_list_query(self):
-        return self.trd_ctx.position_list_query(acc_id=self.get_accid(), trd_env=self.trd_env)
+        return self.trd_ctx.position_list_query(acc_id=self.get_accid(), trd_env=self.trd_env, position_market=self.market)
 
     def get_accid(self):
         return get_trd_accid(trd_env=self.trd_env, trd_market=self.market)
@@ -104,7 +104,7 @@ class FutuOrder:
         if self.trd_env == TrdEnv.REAL:
             #先解锁，再下单
             self.trd_ctx.unlock_trade(init_param.pwd_unlock)
-        ret,data=self.trd_ctx.place_order(acc_id=acc_id, order_type=OrderType.MARKET,price=last_price, qty=qty, code=stock_code, trd_side=trd_side, trd_env=trde_env)
+        ret,data=self.trd_ctx.place_order(acc_id=acc_id, order_type=OrderType.MARKET,price=last_price, qty=qty, code=stock_code, trd_side=trd_side, trd_env=self.trd_env)
         append_log(f"[下单] 下单成功 trd_obj={trd_obj}, ret={ret}, \ndata={data}")
         winsound.Beep(440, 500)
 
