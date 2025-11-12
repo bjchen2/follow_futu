@@ -68,7 +68,8 @@ class FutuOrder:
 
     def get_can_use_money(self):
         ret,acc_info = self.accinfo_query()
-        return acc_info['total_assets'][0] - acc_info['market_val'][0]  - (990000 if self.trd_env == TrdEnv.SIMULATE else 0)
+        can_use_money = acc_info['total_assets'][0] - acc_info['market_val'][0]  - (990000 if self.trd_env == TrdEnv.SIMULATE else 0)
+        return max(0, can_use_money)
 
     def get_accid(self):
         return get_trd_accid(trd_env=self.trd_env, trd_market=self.market)
