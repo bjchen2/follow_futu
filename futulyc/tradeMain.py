@@ -8,13 +8,13 @@ import futuTrade
 
 #总资产
 total_money = 10000
-can_use_money = total_money
 def compare_buy(position_dict, current_dict, futu_order):
     # 找出删除的记录
     for stock_code, record in position_dict.items():
         if stock_code not in current_dict:
             futu_order.place_order(stock_code=stock_code, qty=-record['qty'])
 
+    buy_orders = []  # 存储diff>0的买入订单参数
     # 找出更新的记录
     for stock_code, current_record in current_dict.items():
         if stock_code in position_dict:
@@ -22,14 +22,25 @@ def compare_buy(position_dict, current_dict, futu_order):
             current_total = current_record.total_ratio * total_money / 100
             position_total = record['market_val']
             diff = current_total - position_total
-            if abs(diff) > 300:
-                diff = diff if diff < 0 else min(diff, can_use_money)
+            if diff > 300:
+                #最后执行买入
+                buy_orders.append({
+                    'stock_code': stock_code,
+                    'invest_amount': diff,
+                    'last_price': current_record.current_price
+                })
+            elif diff < -300:
                 futu_order.place_order(stock_code=stock_code, invest_amount=diff, last_price=current_record.current_price)
+
+    #执行买入操作
+    for order in buy_orders:
+        futu_order.place_order(stock_code=order['stock_code'], invest_amount=order['invest_amount'], last_price=order['last_price'])
 
     # 找出新增的记录
     for stock_code, record in current_dict.items():
         if stock_code not in position_dict:
-            futu_order.place_order(stock_code=stock_code, invest_amount=min(record.total_ratio * total_money / 100, can_use_money), last_price=record.current_price)
+            can_use_money = futu_order.get_can_use_money()
+            futu_order.place_order(stock_code=stock_code, invest_amount=record.total_ratio * total_money / 100, last_price=record.current_price)
 
 
 def trade(market = TrdMarket.US, env = TrdEnv.SIMULATE):
@@ -52,11 +63,10 @@ def trade(market = TrdMarket.US, env = TrdEnv.SIMULATE):
 
             print(f"\n[{time.strftime('%Y-%m-%d %H:%M:%S')}] 正在检查...")
 
-            if position_dict:
-                global total_money, can_use_money
-                pos_money = sum(obj['market_val'] for obj in position_dict.values())
-                total_money = max(pos_money, total_money)
-                can_use_money = total_money - pos_money
+            global total_money
+            ret, acc_data = futu_order.accinfo_query()
+            total_money = acc_data['total_assets'][0] - (990000 if env == TrdEnv.SIMULATE else 0)
+
             current_pos = monitor.fetch_data()
             for obj in current_pos.values():
                 obj.stock_code = prefix_code + obj.stock_code

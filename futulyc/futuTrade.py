@@ -63,6 +63,13 @@ class FutuOrder:
     def position_list_query(self):
         return self.trd_ctx.position_list_query(acc_id=self.get_accid(), trd_env=self.trd_env, position_market=self.market)
 
+    def accinfo_query(self):
+        return self.trd_ctx.accinfo_query(acc_id=self.get_accid(), trd_env=self.trd_env, currency=Currency.USD if self.market==TrdMarket.US else Currency.HKD)
+
+    def get_can_use_money(self):
+        ret,acc_info = self.accinfo_query()
+        return acc_info['total_assets'][0] - acc_info['market_val'][0]  - (990000 if self.trd_env == TrdEnv.SIMULATE else 0)
+
     def get_accid(self):
         return get_trd_accid(trd_env=self.trd_env, trd_market=self.market)
 
@@ -74,6 +81,7 @@ class FutuOrder:
         trd_obj = dict()
         trd_obj['code'] = stock_code
         trd_obj['股数'] = qty
+        trd_obj['trd_side'] = ''
         trd_obj['总交易额'] = invest_amount
         trd_obj['单价'] = last_price
         trd_obj['acc_id'] = acc_id
@@ -83,6 +91,12 @@ class FutuOrder:
             if not last_price or last_price <= 0 or not invest_amount:
                 append_log(f"[下单] 单价无效 trd_obj={trd_obj}")
                 return
+            if invest_amount > 0:
+                #买入操作，判断金额是否足够
+                can_use_money = self.get_can_use_money()
+                if can_use_money < invest_amount:
+                    append_log(f"[下单] 可用金额不足，can_use_money={can_use_money} trd_obj={trd_obj}")
+                    invest_amount = can_use_money
 
             trd_side = TrdSide.SELL if invest_amount < 0 else TrdSide.BUY
             invest_amount = abs(invest_amount)
@@ -106,6 +120,10 @@ class FutuOrder:
             self.trd_ctx.unlock_trade(init_param.pwd_unlock)
         ret,data=self.trd_ctx.place_order(acc_id=acc_id, order_type=OrderType.MARKET,price=last_price, qty=qty, code=stock_code, trd_side=trd_side, trd_env=self.trd_env)
         append_log(f"[下单] 下单成功 trd_obj={trd_obj}, ret={ret}, \ndata={data}")
+        while ret == -1:
+            #下单失败，一直告警
+            winsound.Beep(800, 100)
+            time.sleep(0.2)
         winsound.Beep(440, 500)
 
     def __del__(self):
