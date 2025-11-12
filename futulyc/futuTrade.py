@@ -63,11 +63,11 @@ class FutuOrder:
     def position_list_query(self):
         return self.trd_ctx.position_list_query(acc_id=self.get_accid(), trd_env=self.trd_env, position_market=self.market)
 
-    def accinfo_query(self):
-        return self.trd_ctx.accinfo_query(acc_id=self.get_accid(), trd_env=self.trd_env, currency=Currency.USD if self.market==TrdMarket.US else Currency.HKD)
+    def accinfo_query(self, refresh_cache = False):
+        return self.trd_ctx.accinfo_query(acc_id=self.get_accid(), refresh_cache=refresh_cache, trd_env=self.trd_env, currency=Currency.USD if self.market==TrdMarket.US else Currency.HKD)
 
-    def get_can_use_money(self):
-        ret,acc_info = self.accinfo_query()
+    def get_can_use_money(self, refresh_cache = False):
+        ret,acc_info = self.accinfo_query(refresh_cache)
         can_use_money = acc_info['total_assets'][0] - acc_info['market_val'][0]  - (990000 if self.trd_env == TrdEnv.SIMULATE else 0)
         return max(0, can_use_money)
 
@@ -94,7 +94,7 @@ class FutuOrder:
                 return
             if invest_amount > 0:
                 #买入操作，判断金额是否足够
-                can_use_money = self.get_can_use_money()
+                can_use_money = self.get_can_use_money(refresh_cache=True)
                 if can_use_money < invest_amount:
                     append_log(f"[下单] 可用金额不足，can_use_money={can_use_money} trd_obj={trd_obj}")
                     invest_amount = can_use_money

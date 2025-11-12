@@ -39,7 +39,6 @@ def compare_buy(position_dict, current_dict, futu_order):
     # 找出新增的记录
     for stock_code, record in current_dict.items():
         if stock_code not in position_dict:
-            can_use_money = futu_order.get_can_use_money()
             futu_order.place_order(stock_code=stock_code, invest_amount=record.total_ratio * total_money / 100, last_price=record.current_price)
 
 
