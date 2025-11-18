@@ -1,3 +1,5 @@
+import time
+
 import winsound
 
 import init_param
@@ -9,9 +11,11 @@ import futuTrade
 #总资产
 total_money = 10000
 def compare_buy(position_dict, current_dict, futu_order):
+    hasChange = False
     # 找出删除的记录
     for stock_code, record in position_dict.items():
         if stock_code not in current_dict:
+            hasChange = True
             futu_order.place_order(stock_code=stock_code, qty=-record['qty'])
 
     buy_orders = []  # 存储diff>0的买入订单参数
@@ -30,23 +34,29 @@ def compare_buy(position_dict, current_dict, futu_order):
                     'last_price': current_record.current_price
                 })
             elif diff < -300:
+                hasChange = True
                 futu_order.place_order(stock_code=stock_code, invest_amount=diff, last_price=current_record.current_price)
 
+    #延迟3s买入，避免资产未刷新
+    time.sleep(3)
     #执行买入操作
     for order in buy_orders:
+        hasChange = True
         futu_order.place_order(stock_code=order['stock_code'], invest_amount=order['invest_amount'], last_price=order['last_price'])
 
     # 找出新增的记录
     for stock_code, record in current_dict.items():
         if stock_code not in position_dict:
+            hasChange = True
             futu_order.place_order(stock_code=stock_code, invest_amount=record.total_ratio * total_money / 100, last_price=record.current_price)
-
+    if hasChange:
+        futuTrade.append_log(f"current_dict:{current_dict}, position_dict:{position_dict}", "logback.txt")
 
 def trade(market = TrdMarket.US, env = TrdEnv.SIMULATE):
     url = init_param.us_monitor_url if market == TrdMarket.US else init_param.hk_monitor_url
     monitor = lycMonitor.PortfolioMonitor(url)
     # 初始化下单工具
-    futu_order = futuTrade.FutuOrder()
+    futu_order = futuTrade.FutuOrder(market, env)
     print("开始监控投资组合变化...")
     prefix_code = market + "."
 
@@ -64,7 +74,7 @@ def trade(market = TrdMarket.US, env = TrdEnv.SIMULATE):
 
             global total_money
             ret, acc_data = futu_order.accinfo_query()
-            total_money = acc_data['total_assets'][0] - (990000 if env == TrdEnv.SIMULATE else 0)
+            total_money = acc_data['total_assets'][0] - futu_order.get_money_offset()
 
             current_pos = monitor.fetch_data()
             for obj in current_pos.values():
@@ -119,4 +129,4 @@ def rebuild_special_pos_data(data):
 
 
 if __name__ == "__main__":
-    trade()
+    trade(env=TrdEnv.REAL)

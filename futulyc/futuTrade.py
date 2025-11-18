@@ -66,9 +66,12 @@ class FutuOrder:
     def accinfo_query(self, refresh_cache = False):
         return self.trd_ctx.accinfo_query(acc_id=self.get_accid(), refresh_cache=refresh_cache, trd_env=self.trd_env, currency=Currency.USD if self.market==TrdMarket.US else Currency.HKD)
 
+    def get_money_offset(self):
+        return 990000 if self.trd_env == TrdEnv.SIMULATE else 4000
+
     def get_can_use_money(self, refresh_cache = False):
         ret,acc_info = self.accinfo_query(refresh_cache)
-        can_use_money = acc_info['total_assets'][0] - acc_info['market_val'][0]  - (990000 if self.trd_env == TrdEnv.SIMULATE else 0)
+        can_use_money = 1000 + acc_info['total_assets'][0] - acc_info['market_val'][0] - self.get_money_offset()
         return max(0, can_use_money)
 
     def get_accid(self):
@@ -76,7 +79,7 @@ class FutuOrder:
 
     #下单
     def place_order(self, stock_code, invest_amount=None, last_price=None, qty=None):
-        time.sleep(0.1)
+        time.sleep(0.5)
         acc_id = self.get_accid()
 
         trd_obj = dict()
